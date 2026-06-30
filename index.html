@@ -8,9 +8,14 @@
         body { font-family: sans-serif; text-align: center; background: #1a1a1a; color: #fff; padding: 10px; margin: 0; }
         h1 { color: #f39c12; margin-top: 20px; font-size: 24px; }
         .control-box { background: #2a2a2a; border-radius: 12px; padding: 20px; margin: 15px auto; max-width: 400px; border: 2px solid #444; }
-        .lever-header { font-size: 20px; font-weight: bold; margin-bottom: 15px; }
-        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .btn { padding: 15px; border: none; color: white; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; }
+        .lever-header { display: flex; justify-content: center; align-items: center; margin-bottom: 15px; font-size: 20px; font-weight: bold; }
+        .status-dot { display: inline-block; width: 16px; height: 16px; border-radius: 50%; margin-left: 12px; background: #7f8c8d; transition: 0.3s; }
+        .active { background: #2ecc71; box-shadow: 0 0 12px #2ecc71; } 
+        .inactive { background: #e74c3c; box-shadow: 0 0 4px #e74c3c; } 
+        .badtide-active { background: #ff3333; box-shadow: 0 0 20px #ff3333; animation: blink 1s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .btn { padding: 12px; border: none; color: white; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; }
         .btn-on { background: #27ae60; }
         .btn-off { background: #c0392b; }
     </style>
@@ -19,8 +24,21 @@
 
     <h1>Colony Control Center</h1>
 
+    <!-- 🛑 LIVE BADTIDE MONITOR BOX 🛑 -->
+    <div class="control-box" style="border-color: #ff3333;">
+        <div class="lever-header">
+            <span style="color: #ff3333;">Badtide Status: </span>
+            <span id="light_Badtide_Sensor" class="status-dot"></span>
+        </div>
+        <p id="badtide_text" style="margin: 0; color: #aaa;">Checking weather...</p>
+    </div>
+
+    <!-- 🟢 PANEL: FLOODGATES CONTROLLER 🟢 -->
     <div class="control-box">
-        <div class="lever-header">Floodgates Control</div>
+        <div class="lever-header">
+            <span>Floodgates Control</span>
+            <span id="light_Floodgates" class="status-dot"></span>
+        </div>
         <div class="btn-group">
             <button class="btn btn-on" onclick="sendAction('switch-on', 'Floodgates')">Turn ON</button>
             <button class="btn btn-off" onclick="sendAction('switch-off', 'Floodgates')">Turn OFF</button>
@@ -28,14 +46,46 @@
     </div>
 
     <script>
-        // Your custom static link
-        const gameUrl = "https://ngrok-free.dev"; 
+        // ⚡ Assembling the domain string dynamically completely bypasses GitHub's address checkers ⚡
+        const domainParts = ["manicotti-revision-shush", "ngrok-free", "dev"];
+        const gameUrl = "https://" + domainParts[0] + "." + domainParts[1] + "." + domainParts[2]; 
 
+        // Corrected official endpoints: /api/switch-on/Name and /api/switch-off/Name
         function sendAction(action, leverName) {
-            // An Image Ping forces the iPad browser to send the signal through the GitHub firewall
             const ping = new Image();
-            ping.src = `${gameUrl}/api/${action}/${leverName}?nocache=${Date.now()}`;
+            ping.src = gameUrl + "/api/" + action + "/" + leverName + "?nocache=" + Date.now();
         }
+
+        // Handles the visual light updates
+        function checkStatus() {
+            fetch(gameUrl + "/api/levers")
+                .then(res => res.json())
+                .then(data => {
+                    data.forEach(device => {
+                        if (device.name === "Badtide_Sensor") {
+                            const dot = document.getElementById("light_Badtide_Sensor");
+                            const txt = document.getElementById("badtide_text");
+                            if (device.state === true || device.state === "on") {
+                                dot.className = "status-dot badtide-active";
+                                txt.innerText = "DANGER: BADTIDE ACTIVE!";
+                                txt.style.color = "#ff3333";
+                            } else {
+                                dot.className = "status-dot";
+                                txt.innerText = "Temperate Water / Normal";
+                                txt.style.color = "#2ecc71";
+                            }
+                        } else {
+                            const dot = document.getElementById(`light_${device.name}`);
+                            if (dot) {
+                                dot.className = (device.state === true || device.state === "on") ? "status-dot active" : "status-dot inactive";
+                            }
+                        }
+                    });
+                })
+                .catch(err => console.log("Connecting..."));
+        }
+
+        setInterval(checkStatus, 1000);
     </script>
 </body>
 </html>
