@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ultimate Beaver Remote</title>
     <style>
@@ -18,11 +19,15 @@
         .btn-on { background: #27ae60; }
         .btn-off { background: #c0392b; }
         .btn-toggle { background: #e67e22; grid-column: span 2; padding: 15px; font-size: 18px; }
+        iframe { display: none; } /* Keeps the target frame completely invisible */
     </style>
 </head>
 <body>
 
     <h1>Colony Control Center</h1>
+
+    <!-- Hidden target frame to swallow network responses so your iPad never leaves the webpage -->
+    <iframe name="hidden_frame" id="hidden_frame"></iframe>
 
     <!-- 🛑 LIVE BADTIDE MONITOR BOX 🛑 -->
     <div class="control-box" style="border-color: #ff3333;">
@@ -40,26 +45,23 @@
             <span id="light_Floodgates" class="status-dot"></span>
         </div>
         <div class="btn-group">
-            <button class="btn btn-on" onclick="sendAction('Floodgates', 'switch-on')">Turn ON</button>
-            <button class="btn btn-off" onclick="sendAction('Floodgates', 'switch-off')">Turn OFF</button>
-            <button class="btn btn-toggle" onclick="sendAction('Floodgates', 'toggle')">Toggle State</button>
+            <!-- Native HTML Forms bypass all modern browser CORS security policies entirely -->
+            <form action="https://ngrok-free.dev" method="POST" target="hidden_frame">
+                <button type="submit" class="btn btn-on" style="width:100%;">Turn ON</button>
+            </form>
+            <form action="https://ngrok-free.dev" method="POST" target="hidden_frame">
+                <button type="submit" class="btn btn-off" style="width:100%;">Turn OFF</button>
+            </form>
+            <form action="https://ngrok-free.dev" method="POST" target="hidden_frame" style="grid-column: span 2;">
+                <button type="submit" class="btn btn-toggle" style="width:100%;">Toggle State</button>
+            </form>
         </div>
     </div>
 
     <script>
-        // Your custom static link
-        const gameUrl = "https://manicotti-revision-shush.ngrok-free.dev"; 
+        const gameUrl = "https://ngrok-free.dev"; 
 
-        // Corrected command path format: /api/action/leverName
-        function sendAction(leverName, action) {
-            fetch(`${gameUrl}/api/${action}/${leverName}`, { 
-                method: 'POST',
-                mode: 'no-cors' // Bypasses browser network barriers
-            })
-            .catch(err => console.error("Action failed:", err));
-        }
-
-        // Live loop to fetch and display the status lights
+        // Live loop strictly for receiving the status lights
         function checkStatus() {
             fetch(`${gameUrl}/api/levers`)
                 .then(res => res.json())
@@ -88,7 +90,6 @@
                 .catch(err => console.log("Connecting to game server..."));
         }
 
-        // Updates the visual dashboard indicators every 1 second
         setInterval(checkStatus, 1000);
     </script>
 </body>
